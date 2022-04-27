@@ -10,5 +10,5 @@
 class ClientFile < ApplicationRecord
 
   has_one_attached :file
-  validates :id_front, content_type: { in: %w(text/plain) }
+  #validates :id_front, content_type: { in: %w(text/plain) }
 end
