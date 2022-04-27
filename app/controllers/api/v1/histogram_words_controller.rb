@@ -5,7 +5,7 @@ class Api::V1::HistogramWordsController < ApplicationController
     @client_file.file.attach(client_file_params[:file])
     if @client_file.save
       @client_file.update_histogram!
-      render json: @client_file.histogram_words, status: :ok
+      render json: {'data': @client_file.histogram_words, 'id': @client_file.id}, status: :ok
     else
       render json: @client_file.errors.messages, status: :not_acceptable
     end
