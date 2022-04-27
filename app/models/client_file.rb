@@ -19,9 +19,10 @@ class ClientFile < ApplicationRecord
 
   def get_histogram
     words_array = self.get_content_normalized.split(' ')
-    words_array.uniq.map do |word|
+    histogram = words_array.uniq.map do |word|
       { word: word, count: words_array.count(word) }
     end
+    histogram.sort_by{|e| -e[:count]}
   end
 
   def get_content_normalized
@@ -34,7 +35,7 @@ class ClientFile < ApplicationRecord
   private
 
   def file_has_minimum_content
-    text = self.attachment_changes['file'].attachable.read
+    text = self.attachment_changes['file'].attachable.try(:read) || self.attachment_changes['file'].attachable.download
     if text.split(' ').count < 2
       errors.add(:file, 'body content most have more than one word')
     end
