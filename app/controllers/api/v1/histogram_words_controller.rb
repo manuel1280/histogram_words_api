@@ -12,8 +12,8 @@ class Api::V1::HistogramWordsController < ApplicationController
   end
 
   def show
-    @client_histogram = ClientFile.find(params[:id])
-    if @client_histogram.present?
+    @client_histogram = ClientFile.find_by(id: params[:id])
+    if @client_histogram.present? && @client_histogram.histogram_words
       render json: @client_histogram.histogram_words
     else
       render json: {'id': params[:id]}, status: :not_found
