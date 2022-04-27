@@ -4,15 +4,20 @@ class Api::V1::HistogramWordsController < ApplicationController
     @client_file = ClientFile.new
     @client_file.file.attach(client_file_params[:file])
     if @client_file.save
-      render json: @client_file.get_histogram, status: :ok
+      @client_file.update_histogram!
+      render json: @client_file.histogram_words, status: :ok
     else
       render json: @client_file.errors.messages, status: :not_acceptable
     end
   end
 
   def show
-    @client_histogram = ClientFile.find(params[:id]).histogram_words
-    render json: @client_histogram
+    @client_histogram = ClientFile.find(params[:id])
+    if @client_histogram.present?
+      render json: @client_histogram.histogram_words
+    else
+      render json: {'id': params[:id]}, status: :not_found
+    end
   end
 
   private
