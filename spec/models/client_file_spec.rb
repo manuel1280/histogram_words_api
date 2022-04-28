@@ -1,63 +1,88 @@
 require 'rails_helper'
 
 RSpec.describe ClientFile, type: :model do
-  before(:all) do
-    @file = ActiveStorage::Blob.create_after_upload!(
-        io: File.open(Rails.root.join('spec', 'files', 'words_test.txt'), 'rb'),
-        filename: 'words_test.txt',
-        content_type: 'text/plain'
-    )
-    @bad_file = ActiveStorage::Blob.create_after_upload!(
-        io: File.open(Rails.root.join('spec', 'files', 'words_test.jpg')),
-        filename: 'words_test.jpg',
-        content_type: 'image/jpg'
-    )
-    @bad_file_short = ActiveStorage::Blob.create_after_upload!(
-        io: File.open(Rails.root.join('spec', 'files', 'words_test_short.txt')),
-        filename: 'words_test_short.txt',
-        content_type: 'text/plain'
-    )
+  let!(:client_file) { create(:client_file) }
+
+  describe 'validations' do
+    it { should have_db_column(:histogram_words) }
   end
 
-  before(:each) do
-    ClientFile.create!(file: @file)
+  describe 'associations' do
+    it { should have_one_attached(:file) }
   end
 
-  it "validates content type is plain text" do
-    client_file = ClientFile.new(file: @bad_file)
-    client_file.save
-    expect(client_file.errors[:file]).to eq(["file should be one of text/plain"])
+  describe "validates content type is plain text" do
+    context 'when file is image/jpeg' do
+      before { client_file.file = Rack::Test::UploadedFile.new(Rails.root.join('spec', 'files', 'words_test.jpg'), 'image/jpg') }
+      subject { client_file.save }
+
+      it 'returns invalid format errors' do
+        subject
+        expect(client_file.errors.messages).to have_key(:file)
+        expect(client_file.errors[:file]).to eq(['file should be one of text/plain'])
+      end
+    end
   end
 
-  it "validates file has minimum content" do
-    client_file = ClientFile.new(file: @bad_file_short)
-    client_file.save
-    expect(client_file.errors[:file]).to eq(["body content most have more than one word"])
-  end
+  describe "validates file has minimum content" do
+    context 'when file has 1 words' do
+      before { client_file.file = Rack::Test::UploadedFile.new(Rails.root.join('spec', 'files', 'words_test_short.txt'), 'text/plain') }
+      subject { client_file.save }
 
-  describe "creation" do
-    it "should have one item created" do
-      expect(ClientFile.all.count).to eq(1)
+      it 'returns invalid content' do
+        subject
+        expect(client_file.errors.messages).to have_key(:file)
+        expect(client_file.errors[:file]).to eq(['body content most have more than one word'])
+      end
     end
   end
 
   describe "file_attached" do
     it "should have a file attached" do
-      expect(ClientFile.last.file.attached?).to be true
+      expect(client_file.file.attached?).to be true
+    end
+  end
+
+  describe '#update_histogram!' do
+    context 'when file is valid and has attachment' do
+      before { client_file.update_columns(histogram_words: {}) }
+      subject { client_file.update_histogram! }
+      let(:expected_histogram_words) do
+      	[
+      	  { 'word': 'lumu', 'count': 6 }.with_indifferent_access,
+      	  { 'word': 'illuminates', 'count': 3 }.with_indifferent_access,
+      	  { 'word': 'attacks', 'count': 2 }.with_indifferent_access,
+      	  { 'word': 'and', 'count': 2 }.with_indifferent_access,
+      	  { 'word': 'adversaries', 'count': 2 }.with_indifferent_access,
+      	  { 'word': 'all', 'count': 1 }.with_indifferent_access
+      	]
+      end
+
+      it 'updates histogram words' do
+        subject
+        expect(client_file.histogram_words).to be_present
+        expect(client_file.histogram_words).to eq(expected_histogram_words)
+      end
     end
   end
 
   describe "#get_histogram" do
-    it "should return an histogram sorted" do
-      expected = [
-          { word: 'lumu', count: 6 },
-          { word: 'illuminates', count: 3 },
-          { word: 'attacks', count: 2 },
-          { word: 'and', count: 2 },
-          { word: 'adversaries', count: 2 },
-          { word: 'all', count: 1 }
-      ]
-      expect(ClientFile.last.get_histogram).to eq(expected)
+    context 'when call method' do
+      let(:expected_response) do
+      	[
+      	  { word: 'lumu', count: 6 },
+      	  { word: 'illuminates', count: 3 },
+      	  { word: 'attacks', count: 2 },
+      	  { word: 'and', count: 2 },
+      	  { word: 'adversaries', count: 2 },
+      	  { word: 'all', count: 1 }
+      	]
+      end
+      subject { client_file.get_histogram }
+
+      it "should return an histogram sorted" do
+        expect(subject).to eq(expected_response)
+      end
     end
   end
 end

@@ -35,7 +35,7 @@ class ClientFile < ApplicationRecord
   private
 
   def file_has_minimum_content
-    text = self.attachment_changes['file'].attachable.try(:read) || self.attachment_changes['file'].attachable.download
+    text = self.attachment_changes['file']&.attachable.try(:read) || self.file.attachment.blob.download
     if text.split(' ').count < 2
       errors.add(:file, 'body content most have more than one word')
     end
