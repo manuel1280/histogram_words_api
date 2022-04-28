@@ -6,7 +6,7 @@ This API is a tool to come out the most used words in a file text, given to you 
 
 * Terminal or command prompt or an API tester like Postman https://makolyte.com/how-to-upload-a-file-with-postman/ to send files through HTTP requests
 * You only can use .txt files
-* Plain text with filled with text to parse, this file must have at least two words
+* Plain text should be filled with at least two words
 
 # Usage
 
